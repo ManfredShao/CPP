@@ -2,13 +2,17 @@ import java.util.Locale;
 import java.util.Random;
 
 public final class Dotproduct {
-    private static final int[] SIZES = new int[] {10, 100, 1_000, 10_000, 100_000, 1_000_000};
+    private static final int[] SIZES = new int[] {10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000};
 
     private static volatile long checksumInt = 0;
     private static volatile double checksumFp = 0.0;
 
     private static int repsForN(int n) {
-        // Mirror the C-side policy: target ~20M multiply-adds.
+        // Mirror the C-side policy.
+        if (n >= 100_000_000) return 1;
+        if (n >= 10_000_000) return 2;
+
+        // Keep ~20M multiply-adds for n <= 1e6.
         long targetOps = 20_000_000L;
         long reps = targetOps / Math.max(1, n);
         if (reps < 3) reps = 3;

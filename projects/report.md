@@ -1,89 +1,326 @@
-## Project 2 Report: Computing the dot product of two vectors (C vs Java)
+# Project 2 Report
 
-### Overview
-This project implements and benchmarks the dot product of two vectors in **C** and **Java** across five native numeric types:
+## 1. 实验目标与范围
 
-- **Integers**: `signed char`, `short`, `int`
-- **Floating point**: `float`, `double`
+本实验的目标是比较 C 与 Java 在不同数据类型和向量长度下的点乘性能，并分析编译优化级别对 C 版本的影响。我们关注以下维度：
 
-For each language/type combination, the program measures execution time for increasing vector lengths and reports results in a consistent CSV format so C and Java can be compared directly.
+- 语言：`C` 与 `Java`
+- 数据类型：`signed_char`、`short`、`int`、`float`、`double`
+- 向量长度：`N = {1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8}`
+- C 编译优化级：`-O0`、`-O1`、`-O2`、`-O3`
 
-### What was implemented
-- **C program**: `projects/dotproduct.c`
-  - Generates two random vectors for each N
-  - Computes dot product repeatedly to obtain stable timings
-  - Uses a monotonic clock for timing
-  - Outputs CSV: `lang,type,N,reps,total_ns,avg_ns,checksum`
-- **Java program**: `projects/Dotproduct.java`
-  - Same benchmark sizes/types and CSV schema as C
-  - Includes a warm-up phase to reduce JIT compilation effects in measured runs
+输出统一为 CSV，核心字段为：
 
-### Experiment setup
-- **Machine / OS**: macOS 12.x (Darwin 21.6.0)
-- **C compiler**: Apple clang 14.0.0
-- **C flags**: `-O3 -std=c11 -Wall -Wextra -pedantic`
-- **Java**: Eclipse Temurin OpenJDK 17.0.18
-- **Vector sizes**:
-  - N in {10, 100, 10^3, 10^4, 10^5, 10^6}
-- **Repetitions per N**:
-  - Both programs choose `reps` to target ~20 million multiply-add operations per (type, N) point, with bounds [3, 2,000,000].
-- **Randomness / reproducibility**:
-  - Fixed seeds per type and size.
-  - Value ranges are intentionally bounded (especially for small integer types) so results are well-defined and overflow is less likely in the accumulator.
+`lang,type,N,reps,total_ns,avg_ns,checksum`
 
-### Correctness and “anti-optimization” checksum
-Both programs aggregate dot-product results into a global checksum and print it (CSV column `checksum`, plus a final stderr line). This prevents the compiler/JIT from removing the compute loops as dead code.
+---
+## 2.实验前的预期
+1. **运行时间随着 N 增大基本线性增长**：点乘是 O(N) 算法，N 增大时计算量线性增加，且数据访问模式简单，预期 avg_ns 随 N 线性增长。
+2. **运行时间随着数据类型位宽增加而增长**：更宽的数据类型（如 double）通常需要更多的计算资源和内存带宽，预期 avg_ns 随数据类型位宽增加而增长。
+3. **性能随优化级提升**：预计随着编译优化级别的提高，C 版本的性能将得到显著改善。
+4. **异常快/0ns/离散点**：可能由于计时分辨率限制、优化级触发不同循环变换、系统噪声等原因导致某些点出现异常快或离散的结果。
+5. **C 与 Java 性能对比预期**：预计 C 版本在大多数情况下会比 Java 版本更快，特别是在开启-O3 优化级时。
+---
 
-### Timing method
-- **C** uses `clock_gettime(CLOCK_MONOTONIC, ...)` and computes elapsed nanoseconds.
-- **Java** uses `System.nanoTime()`.
+## 3. 实验环境
+### 3.1 操作系统与内核
 
-These are appropriate for benchmarking because they are monotonic (do not jump backwards due to wall-clock adjustments).
+- OS：`macOS 12.7.4`
+- 内核：`Darwin 21.6.0`（`x86_64`）
 
-### Collected raw outputs
-The benchmark runs generated the following raw CSV files (useful to reproduce tables/plots):
-- `projects/results_c.csv`
-- `projects/results_java.csv`
+### 3.2 硬件环境
 
-### Results (high-level)
-Across all types, the measured time shows a **positive correlation** with increasing vector length N (especially from 10^4 upward, where loop overhead becomes negligible).
+- CPU 型号：`Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz`
+- 物理核心：`4`
+- 逻辑核心：`8`
+- 内存：`17179869184` bytes（约 `16 GiB`）
 
-Typical patterns observed:
-- **Large N tends to be memory/cache influenced**. As N grows, the working set exceeds L1/L2 cache and the dot product becomes more bandwidth-limited; performance often scales closer to linear in N with a relatively stable per-element cost.
-- **Java requires warm-up for fair comparison**. Without warm-up, early measurements can be dominated by interpreter/JIT compilation. After warm-up, Java becomes much more competitive.
-- **Small integer types may not be “faster”**. Even though `signed char`/`short` use less memory, both C and Java often execute arithmetic in wider registers (commonly 32-bit or 64-bit). The dominant factor becomes memory access patterns and vectorization, not the nominal type width.
-- **`float` vs `double`**:
-  - Depending on CPU vector units and compiler/JIT decisions, `float` can be faster due to higher SIMD lane density and lower memory bandwidth.
-  - In some cases, `double` can be comparable if computation is not the bottleneck or if vectorization behaves similarly.
+### 3.3 C 运行环境（编译/链接）
 
-### Explanation of performance differences (C vs Java)
-Key reasons the two languages may differ:
-- **Compilation and optimization model**
-  - **C** is ahead-of-time compiled; `-O3` enables aggressive optimizations (loop unrolling, vectorization, strength reduction).
-  - **Java** uses JIT compilation; hot methods can be optimized at runtime after profiling, but this requires warm-up and can vary with JVM flags and run history.
-- **Bounds checks and safety**
-  - Java array accesses are bounds-checked. Modern JVMs can eliminate checks in tight loops (range-check elimination), but this depends on optimization heuristics.
-  - C has no bounds checks, which can reduce overhead, though compilers may still generate similar tight loops if they can prove safety patterns.
-- **Vectorization**
-  - Both compilers can vectorize dot-product loops.
-  - Whether vectorization triggers depends on aliasing rules (C), loop structure, and JVM auto-vectorization capability.
+- `cc --version`：Apple clang `14.0.0 (clang-1400.0.29.202)`
+- `clang --version`：Apple clang `14.0.0 (clang-1400.0.29.202)`
+- Target：`x86_64-apple-darwin21.6.0`
+- Thread model：`posix`
 
-### Notes / limitations
-- The integer dot-product accumulators use a wider type (`long long`/`long`) to reduce overflow risk. Extremely large values can still overflow for `int` at large N if ranges were larger, but the chosen random ranges keep magnitudes reasonable.
-- Measurements are still subject to system noise (background processes, CPU frequency scaling). Repetitions were chosen to reduce this noise.
+### 3.4 Java 运行环境（JVM/JDK）
 
-### How to run
-From the repository root:
+- `java -version`：
+   - `openjdk version "17.0.17" 2025-10-21`
+   - `OpenJDK Runtime Environment (build 17.0.17+10)`
+   - `OpenJDK 64-Bit Server VM (build 17.0.17+10, mixed mode, sharing)`
+- `javac -version`：`javac 17.0.17`
 
-```bash
-cd projects
-clang -O3 -std=c11 -Wall -Wextra -pedantic dotproduct.c -o dotproduct
-./dotproduct > results_c.csv
+---
+## 4. 软件程序
+### 4.1 C 版本：`dotproduct.c`
 
-javac Dotproduct.java
-java Dotproduct > results_java.csv
+关键实现点：
+
+1. 使用 `xorshift64` 按固定 seed 生成输入数据，保证可复现。
+2. 对 5 种类型分别实现点乘函数：
+   - `dot_schar_once`
+   - `dot_short_once`
+   - `dot_int_once`
+   - `dot_float_once`
+   - `dot_double_once`
+3. `reps_for_n(n)` 根据 `N` 自动设定重复次数，目标约 `20M` 次乘加，范围 `[3, 2_000_000]`。
+4. 计时使用 `clock_gettime(CLOCK_MONOTONIC)`（纳秒级，单调时钟）。
+5. 使用 `volatile` 全局 `checksum` 防止计算被优化掉。
+6. - `asm volatile("" ::: "memory")`（编译器屏障）意思是内存可能随时被外界改写，告诉编译器每一次循环都要重新读取，目的是减少“循环被过度优化”带来的假快现象。（具体参见7.1节）
+7.   - `__attribute__((noinline))`（禁止内联）用于防止函数被内联展开，保持测试的独立性和稳定性。但是我在后续实验中发现一个违背直觉的现象，去掉 `noinline` 后程序更慢了——也就是说，允许dot_once内联后程序性能反而变差了（结果见下图）。我的分析如下：
+   ```
+   // 去掉 noinline 后，编译器眼中的代码变成了这样：
+   for (int r = 0; r < reps; r++) {
+    // ---- 点乘函数被强制内联塞进来了 ----
+    for (size_t i = 0; i < n; i++) {
+        acc += (double)a[i] * (double)b[i];
+    }
+    // ------------------------------------
+    
+    // 紧接着就是内存屏障！
+    __asm__ volatile("" : : : "memory"); 
+   }
+   ```
+   - 编译器在分析上面这坨代码时，看到了那个可怕的 memory 屏障。它会吓得瑟瑟发抖：“天呐！刚刚做完一次点乘循环，内存就可能被未知力量修改！那我不仅不敢把这段代码提到外面，我连内层 for 循环里的变量 a、b 和 acc 都不敢放在 CPU 高速寄存器里了！”结果就是：外层的内存屏障“污染”了内层的高性能计算，导致内层循环也失去了最高级别的优化。
+
+   <figure>
+   <img src=image-3.png width="400" height="250">
+   <figcaption>左边是允许单次点乘内联，右边是禁止。不难发现右边平均用时更少</figcaption>
+   </figure>
+
+8.   
+     - 在分析内联的时候，我使用-Rpass-analysis=loop-vectorize来观察编译器对哪些循环进行了向量化处理，有用的结果如下：
+   ```
+   dotproduct.c:137:13: remark: loop not vectorized: cannot prove it is safe to reorder floating-point operations; allow reordering by specifying '#pragma clang loop vectorize(enable)' before the loop or by providing the compiler option '-ffast-math'. [-Rpass-analysis=loop-vectorize]
+        acc += (double)a[i] * (double)b[i];
+   ```
+   - 大意是说浮点数点乘 dot_float / dot_double (Line 137, 145) 没有被向量化的原因是：在数学中，加法满足结合律，但在计算机的浮点数（IEEE 754 标准）中，由于精度截断的原因，浮点数的加法是不满足结合律的。如果要使用 SIMD（向量化）来加速点乘，编译器必须把数组分成几部分并行相加，最后再合并。这会改变浮点数相加的顺序，导致最终结果在小数位末尾产生极其微小的偏差。默认情况下，C/C++ 编译器极度严格，宁可牺牲 10 倍的性能，也绝不敢擅自改变浮点数的计算顺序。
+   - 因此我决定在编译时添加`-O3 -ffast-math`(或者`-Ofast`)选项，允许编译器牺牲一点点尾数精度，去换取极速的性能
+
+
+### 4.2 Java 版本：`Dotproduct.java`
+
+关键实现点：
+
+1. 与 C 保持同样的数据类型、同样的 `N` 集合、同样的 `repsForN` 策略。
+2. 计时使用 `System.nanoTime()`。
+3. 使用固定 seed 的 `Random` 填充输入，保证可复现。
+4. 预热（warmup）阶段：
+   - 分类型执行 10 轮预热，先让 JIT 进入稳定阶段，再正式计时。
+5. 同样通过 `volatile` checksum 保留可观察副作用，降低死代码消除风险。
+
+---
+## 5. 运行脚本与编译参数
+
+### 5.1 C 脚本：`run_dotproduct_c.sh`
+
+- `./run_dotproduct_c.sh 1`：每个优化级输出 `results_c(Ox).csv`
+- `./run_dotproduct_c.sh 5`：额外输出
+  - `results_c(Ox)_run1..run5.csv`
+  - `results_c(Ox)_mean.csv`
+  - `results_c(Ox)_median.csv`
+
+- 编译参数：`-std=c11 -Wall -Wextra -O0/-O1/-O2/-O3`
+- 编译选项介绍：
+  - `-Wall -Wextra`：开启所有警告，帮助发现潜在问题。
+  - `-O0/-O1/-O2/-O3`：分别对应不同优化级别，观察性能变化。
+     - `-O0`：无优化，便于观察原始性能。
+     - `-O1`：基本优化，开启常见的代码改进。
+     - `-O2`：更激进的优化，开启更多的代码改进。
+     - `-O3`：最高级别的优化，开启所有优化选项，可能会改变代码结构以获得最大性能。
+
+### 5.2 Java 脚本：`run_dotproduct_java.sh`
+
+- `./run_dotproduct_java.sh 1`：输出 `results_java.csv`
+- `./run_dotproduct_java.sh 5`：额外输出
+  - `results_java_run1..run5.csv`
+  - `results_java_mean.csv`
+  - `results_java_median.csv`
+  
+- JVM 参数：`-Xms1g -Xmx4g -server`
+- 说明：固定堆大小用于减少堆扩容抖动，避免大数组OOM；`-server` 在现代 JDK 下通常是默认模式，但显式指定可读性更好。
+
+---
+## 6.实验方案设计
+我将针对每个数据类型和每个 N(向量长度)，分别在 C 的四个优化级别和 Java 中执行 5 轮测试。每轮测试中，我会记录总时间（total_ns）和平均时间（avg_ns），以及计算结果的 checksum 以验证正确性。 再通过计算 5 轮的平均值和中位数来分析性能趋势，减少偶然因素的影响。最后我还会计算每元素耗时（avg_ns / N）来更直观地比较不同实现的效率。
+其中，在每轮测试中，我会根据不同的 N 自动调整重复次数（reps），以确保每次测试的总计算量大致相同，目标约为 20M 次乘加操作。这种设计可以让我们在不同规模的输入下获得更稳定和可比较的性能数据，并且避免在小 N 时测量过于短暂导致的计时误差，同时也能在大 N 时避免过长的测试时间。
+
+---
+
+## 7. 实验过程与关键结果
+
+### 7.1 -O1 编译选项反常快于 -O2/-O3：
+在最初的实验中，发现 `-O1` 在N较小时signed char, short, int上表现异常快(平均时间为0ns)，甚至比 `-O2` 和 `-O3` 更快。
+<figure>
+   <img src=image.png width="300" height="370">
+   <figcaption>-O1，未开启编译器屏障</figcaption>
+</figure>
+<figure>
+   <img src=image-1.png width="300" height="370">
+   <figcaption>-O3，未开启编译器屏障</figcaption>
+</figure>
+为了理解 `-O1` 反常现象，我们深入探讨各编译优化级别的特点及其对点乘性能的影响。
+
+#### `-O0`：无优化（调试模式）
+
+**主要特性：**
+
+- 每个变量都从内存读写，不缓存到寄存器
+- 循环结构完全保留，不展开、不合并
+- 函数调用完全保留，不内联
+- 编译速度最快，生成的二进制可直接用 GDB 调试，变量值与源码一一对应
+
+**适用场景：** 调试阶段使用，性能最差，是其他优化级别的性能基准参照。
+
+#### `-O1`：基本优化
+
+在不显著增加编译时间的前提下，开启一批收益明确的优化。
+
+**主要优化手段：**
+
+- **常量折叠**：`x = 2 + 3` 直接替换为 `x = 5`，无需运行时计算
+- **死代码消除（DCE）**：删除结果从未被使用的计算语句
+- **基本内联**：对极短小的函数进行内联展开，消除函数调用开销
+- **寄存器分配优化**：将频繁访问的变量缓存到寄存器，减少不必要的内存读写
+
+#### `-O2`：激进优化（生产环境常用默认）
+
+在 `-O1` 基础上增加更多分析和变换，适合大多数生产环境。
+
+**主要优化手段：**
+
+- **循环不变量外提（LICM）**：将循环内不随迭代变化的计算移到循环外，避免重复执行
+- **公共子表达式消除（CSE）**：相同的子表达式只计算一次，结果复用
+- **函数内联扩展**：更积极地将函数体展开到调用处，减少调用开销
+- **指令调度**：重排指令顺序，减少 CPU 流水线停顿，提高指令吞吐量
+- **分支预测优化**：调整代码布局，配合 CPU 的分支预测器减少预测失败惩罚
+
+**特点：** 不会改变浮点运算顺序，计算结果与 `-O0` 在数值上保持一致。
+
+#### `-O3`：最高优化
+
+在 `-O2` 基础上开启可能改变代码结构的激进变换。
+
+**主要优化手段：**
+
+- **自动向量化（Auto-vectorization）**：将标量循环转换为 SIMD 指令（SSE/AVX），一条指令同时处理多个元素，是点积计算性能提升的核心来源
+- **循环展开（Loop unrolling）**：减少循环控制指令的开销，同时提高指令级并行度
+- **函数克隆（Function cloning）**：针对不同调用场景生成特化版本，进一步优化热路径
+- **更激进的内联**：几乎所有 `inline` 标记的函数都会被展开
+
+**向量化示意：**
+
+```
+标量循环（O0/O1/O2）：          向量化后（O3，概念示意）：
+
+for i in 0..n:                 for i in 0..n step 4:
+    acc += a[i] * b[i]             acc_vec += a[i:i+4] * b[i:i+4]
+                               acc = sum(acc_vec)
 ```
 
-### Conclusion
-Both implementations meet the assignment requirements: they compute dot products across multiple data types, measure execution time using appropriate timing mechanisms, and provide comparable CSV outputs that show time increasing with vector length. The observed performance differences can be explained primarily by optimization models (AOT vs JIT), safety checks, and memory/cache effects at large \(N\).
+对于 `double` 类型，AVX2 指令集可一次处理 4 个元素；`float` 类型可一次处理 8 个元素，因此浮点类型在 `-O3` 下的加速效果尤为显著。
+
+同时我让大模型帮我画了一张图总结：
+
+| 优化特性 | `-O0` | `-O1` | `-O2` | `-O3` |
+|:---|:---:|:---:|:---:|:---:|
+| 常量折叠 | — | ✅ | ✅ | ✅ |
+| 死代码消除 | — | ✅ | ✅ | ✅ |
+| 基本内联 | — | ✅ | ✅ | ✅ |
+| 循环不变量外提 | — | — | ✅ | ✅ |
+| 指令调度 | — | — | ✅ | ✅ |
+| 自动向量化 | — | — | — | ✅ |
+| 循环展开 | — | — | — | ✅ |
+| 可能改变代码结构 | 否 | 否 | 否 | **是** |
+| 典型加速比（vs `-O0`） | 1× | 1.5–2× | 2–4× | 3–6× |
+
+因此我分析原因可能是：
+- 对于-O1, DCE 过于激进时会把"看似无意义"的循环整体删除。例如在基准测试中，若点积函数被声明为 `static inline` 且每次调用的输入完全不变，编译器可能将整个重复循环替换为一次计算加一次乘法，导致计时结果异常偏低（接近 0ns）；
+- 而在 `-O2` 和 `-O3` 中，虽然优化更激进，但由于引入了更多的变换（如向量化、循环展开等），反而可能保留了更多的计算步骤，使得结果更接近实际的计算时间。
+
+所以我采取了asm volatile("" ::: "memory")（编译器屏障）来强制编译器保留计算过程，避免过度优化导致的假快现象。这段代码的作用是告诉编译器“这里有一个内存访问，可能会影响程序状态”，从而阻止编译器将相关代码优化掉或重排。
+得到的结果如下：
+<figure>
+   <img src=image-2.png width="300" height="370">
+   <figcaption>-O1，开启编译器屏障</figcaption>
+</figure>
+和前面的结果比较，这样就明显改善了 `-O1` 在小 N 时的异常快现象，结果更符合预期。
+
+### 7.2 float & double哪个更快
+
+
+## 8. 现象解释
+
+### 5.1 为什么性能随 N 增大基本线性增长
+
+点乘是典型 O(N) 顺序访问。N 增大时：
+
+- 计算次数线性增加
+- 数据工作集逐渐超出 L1/L2 cache
+- 延迟更多转为内存带宽主导
+
+因此 `avg_ns` 大体随 `N` 线性增长。
+
+### 5.2 为什么 `float` 不一定比 `double` 更快
+
+尽管理论上 `float` 更省带宽，但真实结果受以下因素共同影响：
+
+- 编译器/JIT 的向量化策略
+- 指令混合与寄存器分配
+- 累加精度（本实验中 float 计算累加到 double）
+
+因此不同语言/实现中，`float` 与 `double` 的相对关系可能变化。
+
+### 5.3 为什么会出现异常快/0ns/离散点
+
+常见原因：
+
+- 计时窗口过短导致分辨率量化误差
+- 优化级触发不同循环变换
+- 运行期系统噪声（调度、频率、后台任务）
+
+当前版本已加入 `noinline + memory barrier + 多轮统计(mean/median)`，显著改善了稳定性，但完全消除噪声不现实。
+
+---
+
+## 7. 有效性与局限
+
+1. **硬件/系统信息未在 CSV 自动记录**：不同机器不可直接横比。
+2. **单机单时段测量**：受温度、负载、节能策略影响。
+3. **仅测标量实现**：未引入显式 SIMD intrinsic / Java Vector API。
+4. **随机分布固定**：有利可复现，但不覆盖所有数据分布场景。
+
+---
+
+## 8. 可复现实验步骤
+
+在 `projects` 目录执行：
+
+```bash
+# C: 四种优化级，每级5次，输出 run/mean/median
+./run_dotproduct_opt.sh 5
+
+# Java: 5次，输出 run/mean/median
+./run_dotproduct_java.sh 5
+```
+
+核心结果文件：
+
+- C：`results_c(O0~O3)_mean.csv`、`results_c(O0~O3)_median.csv`
+- Java：`results_java_mean.csv`、`results_java_median.csv`
+
+---
+
+## 9. 结论（当前数据下）
+
+1. C 优化级对性能影响显著，`-O3` 相对 `-O0` 的提升普遍在 `2x~5x`。
+2. `-O1` 在浮点上与 `-O3` 可接近，但在整型上通常明显慢于 `-O3`。
+3. Java 在 `double` 上与 C(`-O3`) 已非常接近；在 `float/int` 上整体仍偏慢。
+4. 使用 `median` 比单次结果更可信，能更好反映“典型性能”。
+
+---
+
+## 10. 后续改进建议
+
+- 如果需要课程讨论，可补充 `-Ofast`、`-march=native` 与 Java Vector API 的扩展实验。
 

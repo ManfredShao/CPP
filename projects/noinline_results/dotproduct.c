@@ -106,7 +106,7 @@ static void fill_double(double *a, double *b, size_t n, uint64_t seed)
     }
 }
 
-static __attribute__((noinline)) long long dot_schar_once(const signed char *a, const signed char *b, size_t n)
+static long long dot_schar_once(const signed char *a, const signed char *b, size_t n)
 {
     long long acc = 0;
     for (size_t i = 0; i < n; i++)
@@ -114,7 +114,7 @@ static __attribute__((noinline)) long long dot_schar_once(const signed char *a, 
     return acc;
 }
 
-static __attribute__((noinline)) long long dot_short_once(const short *a, const short *b, size_t n)
+static long long dot_short_once(const short *a, const short *b, size_t n)
 {
     long long acc = 0;
     for (size_t i = 0; i < n; i++)
@@ -122,7 +122,7 @@ static __attribute__((noinline)) long long dot_short_once(const short *a, const 
     return acc;
 }
 
-static __attribute__((noinline)) long long dot_int_once(const int *a, const int *b, size_t n)
+static long long dot_int_once(const int *a, const int *b, size_t n)
 {
     long long acc = 0;
     for (size_t i = 0; i < n; i++)
@@ -130,7 +130,7 @@ static __attribute__((noinline)) long long dot_int_once(const int *a, const int 
     return acc;
 }
 
-static __attribute__((noinline)) double dot_float_once(const float *a, const float *b, size_t n)
+static double dot_float_once(const float *a, const float *b, size_t n)
 {
     double acc = 0.0;
     for (size_t i = 0; i < n; i++)
@@ -138,7 +138,7 @@ static __attribute__((noinline)) double dot_float_once(const float *a, const flo
     return acc;
 }
 
-static __attribute__((noinline)) double dot_double_once(const double *a, const double *b, size_t n)
+static double dot_double_once(const double *a, const double *b, size_t n)
 {
     double acc = 0.0;
     for (size_t i = 0; i < n; i++)

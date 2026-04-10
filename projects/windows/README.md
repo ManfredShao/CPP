@@ -20,7 +20,7 @@
    - MinGW-w64 `gcc`
 3. JDK 17+（`java`/`javac` 在 `PATH`）
 4. Python 3（可选，仅绘图需要）
-   - `pip install pandas matplotlib tabulate`
+   - `py -3.13 -m pip install --user pandas matplotlib tabulate`
 
 ## 建议执行顺序
 
@@ -47,7 +47,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 ### 3) 生成图和每元素耗时表（可选）
 
 ```powershell
-python -m pip install pandas matplotlib tabulate
+py -3.13 -m pip install --user pandas matplotlib tabulate
 .\run_plot.ps1
 ```
 

@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent
 OUT_DIR = BASE_DIR / "output_plots"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-C_LEVELS = ["O0", "O1", "O2", "O3", "Ofast"]
+C_LEVELS = ["O0", "O1", "O2", "O3", "Ofast", "Ofast_native"]
 TYPE_ORDER = ["schar", "short", "int", "float", "double"]
 TYPE_LABEL = {
     "schar": "signed_char",
@@ -28,6 +28,8 @@ def load_metric_data(metric: str):
     for level in C_LEVELS:
         if level == "Ofast":
             file_path = BASE_DIR / "ofast_results" / f"results_c({level})_{metric}.csv"
+        elif level == "Ofast_native":
+            file_path = BASE_DIR / "ofast_native_results" / f"results_c({level})_{metric}.csv"
         else:
             file_path = BASE_DIR / f"results_c({level})_{metric}.csv"
         frame = pd.read_csv(file_path)
@@ -55,6 +57,7 @@ def plot_by_type(median_df: pd.DataFrame):
         "C-O2": "#ff7f0e",
         "C-O3": "#9467bd",
         "C-Ofast": "#17becf",
+        "C-Ofast_native": "#8c564b",
         "Java": "#d62728",
     }
 
@@ -89,7 +92,7 @@ def plot_by_type(median_df: pd.DataFrame):
         ax_full.grid(True, linestyle="--", alpha=0.35)
 
         ax_zoom = axes[1]
-        zoom_series_order = ["C-O1", "C-O2", "C-O3", "C-Ofast", "Java"]
+        zoom_series_order = ["C-O1", "C-O2", "C-O3", "C-Ofast", "C-Ofast_native", "Java"]
         for series in zoom_series_order:
             series_data = subset[subset["series"] == series].sort_values("N")
             if series_data.empty:
@@ -107,7 +110,7 @@ def plot_by_type(median_df: pd.DataFrame):
         ax_zoom.set_xscale("log")
         ax_zoom.set_xlabel("N (log scale)")
         ax_zoom.set_ylabel("median avg_ns")
-        ax_zoom.set_title("Zoom View (C-O1/O2/O3/Ofast vs Java)")
+        ax_zoom.set_title("Zoom View (C-O1/O2/O3/Ofast/Ofast_native vs Java)")
         ax_zoom.grid(True, linestyle="--", alpha=0.35)
 
         fig.suptitle(
@@ -120,7 +123,7 @@ def plot_by_type(median_df: pd.DataFrame):
             handles + [h for h, l in zip(zoom_handles, zoom_labels) if l not in labels],
             labels + [l for l in zoom_labels if l not in labels],
             loc="upper center",
-            ncol=6,
+            ncol=7,
             frameon=False,
             bbox_to_anchor=(0.5, 1.04),
         )

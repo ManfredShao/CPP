@@ -23,32 +23,60 @@
 ---
 
 ## 3. 实验环境
-### 3.1 操作系统与内核
+### 3.1 macOS实验环境
+#### 3.1.1 操作系统与内核
 
 - OS：`macOS 12.7.4`
 - 内核：`Darwin 21.6.0`（`x86_64`）
 
-### 3.2 硬件环境
+#### 3.1.2 硬件环境
 
 - CPU 型号：`Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz`
 - 物理核心：`4`
 - 逻辑核心：`8`
 - 内存：`17179869184` bytes（约 `16 GiB`）
 
-### 3.3 C 运行环境（编译/链接）
+#### 3.1.3 C 运行环境（编译/链接）
 
 - `cc --version`：Apple clang `14.0.0 (clang-1400.0.29.202)`
 - `clang --version`：Apple clang `14.0.0 (clang-1400.0.29.202)`
 - Target：`x86_64-apple-darwin21.6.0`
 - Thread model：`posix`
 
-### 3.4 Java 运行环境（JVM/JDK）
+#### 3.1.4 Java 运行环境（JVM/JDK）
 
 - `java -version`：
    - `openjdk version "17.0.17" 2025-10-21`
    - `OpenJDK Runtime Environment (build 17.0.17+10)`
    - `OpenJDK 64-Bit Server VM (build 17.0.17+10, mixed mode, sharing)`
 - `javac -version`：`javac 17.0.17`
+
+### 3.2 Windows 实验环境
+
+#### 3.2.1 操作系统
+
+- OS：`Microsoft Windows 11 家庭中文版`
+- 版本：`10.0.26100`（Build `26100`）
+- 架构：`64 位`
+
+#### 3.2.2 硬件环境
+
+- CPU 型号：`13th Gen Intel(R) Core(TM) i7-13650HX`
+- 物理核心：`14`
+- 逻辑核心：`20`
+- 内存：`16780582912` bytes（约 `15.63 GiB`）
+
+#### 3.2.3 C 运行环境（编译/链接）
+
+- `gcc --version`：`gcc.exe (MinGW-W64 x86_64-ucrt-posix-seh, built by Brecht Sanders, r2) 15.1.0`
+
+#### 3.2.4 Java 运行环境（JVM/JDK）
+
+- `java -version`：
+   - `java version "24.0.1" 2025-04-15`
+   - `Java(TM) SE Runtime Environment (build 24.0.1+9-30)`
+   - `Java HotSpot(TM) 64-Bit Server VM (build 24.0.1+9-30, mixed mode, sharing)`
+- `javac -version`：`javac 24.0.1`
 
 ---
 ## 4. 软件程序

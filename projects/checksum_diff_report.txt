@@ -1,1 +1,0 @@
-TOTAL=40 DIFF=0

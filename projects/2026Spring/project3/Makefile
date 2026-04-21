@@ -2,7 +2,7 @@ CC := $(or $(shell command -v gcc-14 2>/dev/null),$(shell command -v gcc-13 2>/d
 CC_VERSION := $(shell $(CC) --version 2>/dev/null | head -n 1)
 
 TARGET := sgemm_bench
-SRCS := main.c interface.c time.c sgemm.c
+SRCS := main.c interface.c sgemm.c
 OBJS := $(SRCS:.c=.o)
 
 OPT_FLAGS ?= -O3

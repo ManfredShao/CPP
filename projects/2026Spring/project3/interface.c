@@ -53,7 +53,7 @@ void sgemm(struct Matrix *A, struct Matrix *B, struct Matrix *C, int type) {
         exit(1);
     }
 
-    double start_time = HPL_timer_walltime();
+    double start_time = omp_get_wtime();
     if(type == 1) {
         matmul_plain(A->rows, A->cols, B->cols, A->data, B->data, C->data);
     } else if(type == 2) {
@@ -64,6 +64,6 @@ void sgemm(struct Matrix *A, struct Matrix *B, struct Matrix *C, int type) {
         fprintf(stderr, "Invalid matrix multiplication type specified\n");
         exit(1);
     }
-    double end_time = HPL_timer_walltime();
+    double end_time = omp_get_wtime();
     printf("Time: %f seconds\n", end_time - start_time);
 }

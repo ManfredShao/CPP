@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cblas.h>
+#include <omp.h>
+
 
 #define sgemm_plain 1
 #define sgemm_improved 2
@@ -16,8 +18,6 @@ struct Matrix {
 struct Matrix* generate_matrix(size_t rows, size_t cols);
 void freeMatrix(struct Matrix *mat);
 void check_result(struct Matrix *C1, struct Matrix *C2, struct Matrix *C3, size_t rows, size_t cols);
-
-double HPL_timer_walltime();
 
 void matmul_plain(int rows1, int cols1, int cols2, const float *a, const float *b, float *c);
 void matmul_improved(int rows1, int cols1, int cols2, const float *a, const float *b, float *c);

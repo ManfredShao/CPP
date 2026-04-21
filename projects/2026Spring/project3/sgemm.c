@@ -22,6 +22,7 @@ void matmul_improved(int rows1, int cols1, int cols2, const float *a, const floa
 
     for(int i = 0; i<rows1; i++) {
         for(int k = 0; k<cols1; k++) {
+            #pragma omp parallel for
             for(int j = 0; j<cols2; j++) {
                 c[i*cols2 + j] += a[i*cols1 + k] * b[k*cols2 + j];
             }

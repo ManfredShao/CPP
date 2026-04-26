@@ -5,7 +5,7 @@ TARGET := sgemm_bench
 SRCS := main.c interface.c sgemm.c
 OBJS := $(SRCS:.c=.o)
 
-OPT_FLAGS ?= -O3
+OPT_FLAGS ?= -O3 -march=native
 
 ifeq ($(findstring Apple clang,$(CC_VERSION)),Apple clang)
 COMPILER_FAMILY := apple-clang

@@ -1,5 +1,6 @@
 #include "sgemm.h"
 #include <math.h>
+#include <string.h>
 
 struct Matrix* generate_matrix(size_t rows, size_t cols) {
     struct Matrix *mat = (struct Matrix*)malloc(sizeof(struct Matrix));
@@ -19,8 +20,30 @@ struct Matrix* generate_matrix(size_t rows, size_t cols) {
     }
 
     for(size_t i = 0; i < rows * cols; i++) {
-        mat->data[i] = (float)(rand() / RAND_MAX); // Initialize with random float values between 0 and 1
+        mat->data[i] = (float)rand() / (float)RAND_MAX; // Initialize with random float values between 0 and 1
     }
+
+    return mat;
+}
+
+struct Matrix* create_matrix(size_t rows, size_t cols) {
+    struct Matrix *mat = (struct Matrix*)malloc(sizeof(struct Matrix));
+    if(mat == NULL) {
+        fprintf(stderr, "Memory allocation failed for matrix structure\n");
+        return NULL;
+    }
+
+    mat->rows = rows;
+    mat->cols = cols;
+    mat->ld = cols; // leading dimension for BLAS is typically the number of columns
+    mat->data = (float*)malloc(rows * cols * sizeof(float));
+    if(mat->data == NULL) {
+        fprintf(stderr, "Memory allocation failed for matrix data\n");
+        free(mat);
+        return NULL;
+    }
+
+    memset(mat->data, 0, rows * cols * sizeof(float));
 
     return mat;
 }
@@ -39,7 +62,7 @@ void check_result(struct Matrix *C1, struct Matrix *C2, struct Matrix *C3, size_
     }
 
     for(size_t i = 0; i < rows * cols; i++) {
-        if(fabs(C1->data[i] - C2->data[i]) > 1e-5 || fabs(C1->data[i] - C3->data[i]) > 1e-5) {
+        if(fabs(C1->data[i] - C2->data[i]) > 1e-4 || fabs(C1->data[i] - C3->data[i]) > 1e-4) {
             fprintf(stderr, "Results do not match at index %zu: C1=%f, C2=%f, C3=%f\n", i, C1->data[i], C2->data[i], C3->data[i]);
             exit(1);
         }

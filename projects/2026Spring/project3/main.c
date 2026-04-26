@@ -26,16 +26,16 @@ int main(int argc, char *argv[]) {
 
     A = generate_matrix(rows1, cols1);
     B = generate_matrix(cols1, cols2);
-    C_1 = generate_matrix(rows1, cols2);
-    C_2 = generate_matrix(rows1, cols2);
-    C_3 = generate_matrix(rows1, cols2);
+    C_1 = create_matrix(rows1, cols2);
+    C_2 = create_matrix(rows1, cols2);
+    C_3 = create_matrix(rows1, cols2);
 
     // sgemm(A, B, C_1, sgemm_plain);
     sgemm(A, B, C_2, sgemm_improved);
     sgemm(A, B, C_3, sgemm_openblas);
 
     // check_result(C_1, C_2, C_3, rows1, cols2);
-    check_result(C_2, C_3, C_3, rows1, cols2);
+    check_result(C_3, C_2, C_3, rows1, cols2);
 
     freeMatrix(A);
     freeMatrix(B);

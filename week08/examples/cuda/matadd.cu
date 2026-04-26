@@ -145,7 +145,7 @@ int main()
     int dev_count = 0;
     int dev_id = 0;
     cudaGetDeviceCount(&dev_count);
-    cudaSetDevice(2);
+    cudaSetDevice(0);
     cudaGetDevice(&dev_id);
     printf("You have %d cuda devices.\n", dev_count);
     printf("You are using device %d.\n", dev_id);

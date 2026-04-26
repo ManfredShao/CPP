@@ -1,8 +1,10 @@
 *.out
 *.o
+*.d
 ~$*
 settings.json
 .DS_Store
 .vscode
 .localjdk
 .localjre
+sgemm_bench

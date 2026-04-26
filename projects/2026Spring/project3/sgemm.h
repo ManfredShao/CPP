@@ -3,7 +3,6 @@
 #include <cblas.h>
 #include <omp.h>
 
-
 #define sgemm_plain 1
 #define sgemm_improved 2
 #define sgemm_openblas 3
@@ -16,6 +15,7 @@ struct Matrix {
 };
 
 struct Matrix* generate_matrix(size_t rows, size_t cols);
+struct Matrix* create_matrix(size_t rows, size_t cols);
 void freeMatrix(struct Matrix *mat);
 void check_result(struct Matrix *C1, struct Matrix *C2, struct Matrix *C3, size_t rows, size_t cols);
 

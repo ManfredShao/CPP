@@ -4,6 +4,7 @@ CC_VERSION := $(shell $(CC) --version 2>/dev/null | head -n 1)
 TARGET := sgemm_bench
 SRCS := main.c interface.c sgemm.c
 OBJS := $(SRCS:.c=.o)
+DEPS := $(OBJS:.o=.d)
 
 OPT_FLAGS ?= -O3 -march=native
 
@@ -15,7 +16,9 @@ else
 COMPILER_FAMILY := gcc
 endif
 
-ARCH_FLAGS ?= -mavx2
+# Optional ISA tuning (example: ARCH_FLAGS=-mavx2)
+ARCH_FLAGS ?=
+DEPFLAGS ?= -MMD -MP
 
 ifeq ($(COMPILER_FAMILY),apple-clang)
 WARN_FLAGS ?= -Wall -Wextra
@@ -42,12 +45,21 @@ OMP_LDFLAGS ?=
 OMP_LIBS ?= -fopenmp
 endif
 
-CFLAGS ?= $(OPT_FLAGS) $(ARCH_FLAGS) $(OMP_CFLAGS) $(WARN_FLAGS)
+CFLAGS ?= $(OPT_FLAGS) $(ARCH_FLAGS) $(OMP_CFLAGS) $(WARN_FLAGS) $(DEPFLAGS)
 
+OPENBLAS_CFLAGS ?= $(shell pkg-config --cflags openblas 2>/dev/null)
+OPENBLAS_LIBS ?= $(shell pkg-config --libs openblas 2>/dev/null)
+
+ifeq ($(strip $(OPENBLAS_LIBS)),)
 OPENBLAS_PREFIX ?= /opt/local
 CPPFLAGS += -I$(OPENBLAS_PREFIX)/include/openblas -I$(OPENBLAS_PREFIX)/include
 LDFLAGS += -L$(OPENBLAS_PREFIX)/lib $(OMP_LDFLAGS)
 LDLIBS += -lopenblas $(OMP_LIBS)
+else
+CPPFLAGS += $(OPENBLAS_CFLAGS)
+LDFLAGS += $(OMP_LDFLAGS)
+LDLIBS += $(OPENBLAS_LIBS) $(OMP_LIBS)
+endif
 
 .PHONY: all run clean info
 
@@ -61,11 +73,13 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+-include $(DEPS)
+
 run: $(TARGET)
 	./$(TARGET) $(RUN_SIZE)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(DEPS) $(TARGET)
 
 info:
 	@echo "CC=$(CC)"
@@ -75,3 +89,5 @@ info:
 	@echo "CPPFLAGS=$(CPPFLAGS)"
 	@echo "LDFLAGS=$(LDFLAGS)"
 	@echo "LDLIBS=$(LDLIBS)"
+	@echo "OPENBLAS_CFLAGS=$(OPENBLAS_CFLAGS)"
+	@echo "OPENBLAS_LIBS=$(OPENBLAS_LIBS)"

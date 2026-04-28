@@ -6,7 +6,7 @@ SRCS := main.c interface.c sgemm.c
 OBJS := $(SRCS:.c=.o)
 DEPS := $(OBJS:.o=.d)
 
-OPT_FLAGS ?= -O3 -march=native
+OPT_FLAGS ?= -O3 -march=native -ffast-math
 
 ifeq ($(findstring Apple clang,$(CC_VERSION)),Apple clang)
 COMPILER_FAMILY := apple-clang

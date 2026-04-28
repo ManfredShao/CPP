@@ -1,4 +1,6 @@
 #include "sgemm.h"
+#include <immintrin.h>  // AVX2
+
 #define BLOCK_SIZE 64
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -49,9 +51,31 @@ void matmul_improved(int rows1, int cols1, int cols2, const float *a, const floa
 
                 for(int i = i0; i<i_max; i++) {
                     for(int k = k0; k<k_max; k++) {
-                        float a_ik = a[i*cols1 + k];
-                        for(int j = j0; j<j_max; j++) {
-                            c[i*cols2 + j] += a_ik * b[k*cols2 + j];
+                        __m256 va = _mm256_set1_ps(a[i*cols1 + k]);
+
+                        const float *bp = b + k * cols2;
+                        float *cp = c + i * cols2;
+
+                        int j = j0;
+                        for (; j <= j_max - 32; j += 32) {
+                            __m256 vc0 = _mm256_loadu_ps(cp + j);
+                            __m256 vc1 = _mm256_loadu_ps(cp + j + 8);
+                            __m256 vc2 = _mm256_loadu_ps(cp + j + 16);
+                            __m256 vc3 = _mm256_loadu_ps(cp + j + 24);
+
+                            vc0 = _mm256_fmadd_ps(va, _mm256_loadu_ps(bp + j),      vc0);
+                            vc1 = _mm256_fmadd_ps(va, _mm256_loadu_ps(bp + j + 8),  vc1);
+                            vc2 = _mm256_fmadd_ps(va, _mm256_loadu_ps(bp + j + 16), vc2);
+                            vc3 = _mm256_fmadd_ps(va, _mm256_loadu_ps(bp + j + 24), vc3);
+
+                            _mm256_storeu_ps(cp + j,      vc0);
+                            _mm256_storeu_ps(cp + j + 8,  vc1);
+                            _mm256_storeu_ps(cp + j + 16, vc2);
+                            _mm256_storeu_ps(cp + j + 24, vc3);
+                        }
+
+                        for(; j<j_max; j++) {
+                            cp[j] += a[i*cols1 + k] * bp[j];
                         }
                     }
                 }

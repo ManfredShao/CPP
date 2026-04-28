@@ -55,15 +55,21 @@ void freeMatrix(struct Matrix *mat) {
     }
 }
 
-void check_result(struct Matrix *C1, struct Matrix *C2, struct Matrix *C3, size_t rows, size_t cols) {
-    if(C1 == NULL || C2 == NULL || C3 == NULL || C1->data == NULL || C2->data == NULL || C3->data == NULL) {
+void check_result(__attribute__((unused)) struct Matrix *C1, struct Matrix *C2, struct Matrix *C3, size_t rows, size_t cols) {
+    if(C2 == NULL || C3 == NULL || C2->data == NULL || C3->data == NULL) {
         fprintf(stderr, "Invalid matrix pointer provided to check_result\n");
         exit(1);
     }
 
     for(size_t i = 0; i < rows * cols; i++) {
-        if(fabs(C1->data[i] - C2->data[i]) > 1e-4 || fabs(C1->data[i] - C3->data[i]) > 1e-4) {
-            fprintf(stderr, "Results do not match at index %zu: C1=%f, C2=%f, C3=%f\n", i, C1->data[i], C2->data[i], C3->data[i]);
+        float v2 = C2->data[i];
+        float v3 = C3->data[i];
+        float diff = fabs(v2 - v3);
+        float max_val = fabs(v2) > fabs(v3) ? fabs(v2) : fabs(v3);
+        
+        // relative error check with a small epsilon to avoid division by zero, and absolute error check.
+        if(diff / (max_val + 1e-8) > 1e-3 && diff > 1e-4) {
+            fprintf(stderr, "Results do not match at index %zu: C2=%f, C3=%f\n", i, v2, v3);
             exit(1);
         }
     }

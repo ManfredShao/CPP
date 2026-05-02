@@ -7,6 +7,17 @@ OBJS := $(SRCS:.c=.o)
 DEPS := $(OBJS:.o=.d)
 
 OPT_FLAGS ?= -O3 -march=native -ffast-math
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+MACOSX_SDK_VERSION := $(shell /usr/bin/xcrun --sdk macosx --show-sdk-version 2>/dev/null)
+ifeq ($(strip $(MACOSX_SDK_VERSION)),)
+MACOSX_DEPLOYMENT_TARGET ?= 16.0
+else
+MACOSX_DEPLOYMENT_TARGET ?= $(MACOSX_SDK_VERSION)
+endif
+export MACOSX_DEPLOYMENT_TARGET
+endif
 
 ifeq ($(findstring Apple clang,$(CC_VERSION)),Apple clang)
 COMPILER_FAMILY := apple-clang
@@ -18,18 +29,23 @@ endif
 
 # Optional ISA tuning (example: ARCH_FLAGS=-mavx2)
 ARCH_FLAGS ?=
+
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),arm64)
+ARCH_FLAGS :=
+endif
 DEPFLAGS ?= -MMD -MP
 
 ifeq ($(COMPILER_FAMILY),apple-clang)
-WARN_FLAGS ?= -Wall -Wextra
+WARN_FLAGS ?= -Wall -Wextra -Wno-overriding-deployment-version
 else ifeq ($(COMPILER_FAMILY),clang)
-WARN_FLAGS ?= -Wall -Wextra -Wpedantic
+WARN_FLAGS ?= -Wall -Wextra -Wpedantic -Wno-overriding-deployment-version
 else
 WARN_FLAGS ?= -Wall -Wextra -Wpedantic
 endif
 
-LIBOMP_INCLUDE_DIR ?= /opt/local/include/libomp
-LIBOMP_LIB_DIR ?= /opt/local/lib/libomp
+LIBOMP_INCLUDE_DIR ?= /opt/homebrew/opt/libomp/include
+LIBOMP_LIB_DIR ?= /opt/homebrew/opt/libomp/lib
 
 ifeq ($(COMPILER_FAMILY),apple-clang)
 OMP_CFLAGS ?= -Xpreprocessor -fopenmp -I$(LIBOMP_INCLUDE_DIR)
@@ -51,7 +67,7 @@ OPENBLAS_CFLAGS ?= $(shell pkg-config --cflags openblas 2>/dev/null)
 OPENBLAS_LIBS ?= $(shell pkg-config --libs openblas 2>/dev/null)
 
 ifeq ($(strip $(OPENBLAS_LIBS)),)
-OPENBLAS_PREFIX ?= /opt/local
+OPENBLAS_PREFIX ?= /opt/homebrew/opt/openblas
 CPPFLAGS += -I$(OPENBLAS_PREFIX)/include/openblas -I$(OPENBLAS_PREFIX)/include
 LDFLAGS += -L$(OPENBLAS_PREFIX)/lib $(OMP_LDFLAGS)
 LDLIBS += -lopenblas $(OMP_LIBS)

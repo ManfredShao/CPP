@@ -1,5 +1,7 @@
 #include "sgemm.h"
+#if defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>  // AVX2
+#endif
 
 #define BLOCK_SIZE 64
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -51,11 +53,11 @@ void matmul_improved(int rows1, int cols1, int cols2, const float *a, const floa
 
                 for(int i = i0; i<i_max; i++) {
                     for(int k = k0; k<k_max; k++) {
-                        __m256 va = _mm256_set1_ps(a[i*cols1 + k]);
-
                         const float *bp = b + k * cols2;
                         float *cp = c + i * cols2;
 
+#if defined(__AVX2__)
+                        __m256 va = _mm256_set1_ps(a[i*cols1 + k]);
                         int j = j0;
                         for (; j <= j_max - 32; j += 32) {
                             __m256 vc0 = _mm256_loadu_ps(cp + j);
@@ -77,6 +79,12 @@ void matmul_improved(int rows1, int cols1, int cols2, const float *a, const floa
                         for(; j<j_max; j++) {
                             cp[j] += a[i*cols1 + k] * bp[j];
                         }
+#else
+                        float a_ik = a[i*cols1 + k];
+                        for(int j = j0; j<j_max; j++) {
+                            cp[j] += a_ik * bp[j];
+                        }
+#endif
                     }
                 }
             }

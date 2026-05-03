@@ -6,7 +6,7 @@ SRCS := main.c interface.c sgemm.c
 OBJS := $(SRCS:.c=.o)
 DEPS := $(OBJS:.o=.d)
 
-OPT_FLAGS ?= -O3 -march=native -ffast-math
+OPT_FLAGS ?= -g -O3 -march=native -ffast-math
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)

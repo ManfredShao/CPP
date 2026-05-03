@@ -94,5 +94,5 @@ void sgemm(struct Matrix *A, struct Matrix *B, struct Matrix *C, int type) {
         exit(1);
     }
     double end_time = omp_get_wtime();
-    printf("Time: %f seconds\n", end_time - start_time);
+    printf("type: %d Time: %f seconds\n", type, end_time - start_time);
 }

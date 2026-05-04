@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cblas.h>
+#include <openblas/cblas.h>
 #include <omp.h>
 
 #define sgemm_plain 1
 #define sgemm_improved 2
 #define sgemm_openblas 3
+
+extern int block_size;
 
 struct Matrix {
     size_t rows;

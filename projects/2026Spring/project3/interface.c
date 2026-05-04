@@ -6,7 +6,7 @@ struct Matrix* generate_matrix(size_t rows, size_t cols) {
     struct Matrix *mat = (struct Matrix*)malloc(sizeof(struct Matrix));
     if(mat == NULL) {
         fprintf(stderr, "Memory allocation failed for matrix structure\n");
-        return NULL;
+        exit(1);
     }
 
     mat->rows = rows;
@@ -16,7 +16,7 @@ struct Matrix* generate_matrix(size_t rows, size_t cols) {
     if(mat->data == NULL) {
         fprintf(stderr, "Memory allocation failed for matrix data\n");
         free(mat);
-        return NULL;
+        exit(1);
     }
 
     for(size_t i = 0; i < rows * cols; i++) {
@@ -30,7 +30,7 @@ struct Matrix* create_matrix(size_t rows, size_t cols) {
     struct Matrix *mat = (struct Matrix*)malloc(sizeof(struct Matrix));
     if(mat == NULL) {
         fprintf(stderr, "Memory allocation failed for matrix structure\n");
-        return NULL;
+        exit(1);
     }
 
     mat->rows = rows;
@@ -40,7 +40,7 @@ struct Matrix* create_matrix(size_t rows, size_t cols) {
     if(mat->data == NULL) {
         fprintf(stderr, "Memory allocation failed for matrix data\n");
         free(mat);
-        return NULL;
+        exit(1);
     }
 
     memset(mat->data, 0, rows * cols * sizeof(float));

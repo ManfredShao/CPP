@@ -1,5 +1,7 @@
 #include "sgemm.h"
 
+int block_size;
+
 int isValidInput(int input) {
     if(input <= 0 || input > 100000) {
         return 0;
@@ -11,6 +13,10 @@ int isValidInput(int input) {
 
 int main(int argc, char *argv[]) {
     int rows1 = 16, cols1 = 16, cols2 = 16;
+    
+    block_size = 224; 
+    char *bs_env = getenv("BLOCK_SIZE");
+    if (bs_env) block_size = atoi(bs_env);
 
     struct Matrix *A, *B, *C_1, *C_2, *C_3;
 

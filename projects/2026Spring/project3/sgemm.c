@@ -1,12 +1,13 @@
 #include "sgemm.h"
+#include <malloc.h>   // for _aligned_malloc
 #if defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>  // AVX2
 #endif
 
-#include <valgrind/callgrind.h>
+// #include <valgrind/callgrind.h>
 #include <omp.h>
 #include <string.h>
-#define BLOCK_SIZE 96
+#include <stdlib.h>
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
 void matmul_plain(int rows1, int cols1, int cols2, const float *a, const float *b, float *c) {
@@ -49,18 +50,14 @@ void matmul_improved(int rows1, int cols1, int cols2, const float *a, const floa
     // CALLGRIND_START_INSTRUMENTATION;
 #pragma omp parallel 
 {
-    float* B_pack = (float *)aligned_alloc(32, BLOCK_SIZE * BLOCK_SIZE * sizeof(float)); 
-    #pragma omp master
-    {
-        printf("OMP threads: %d\n", omp_get_num_threads());
-    }
+    float* B_pack = (float *)_aligned_malloc(block_size * block_size * sizeof(float), 32);
     #pragma omp for schedule(static)
-    for(int i0 = 0; i0<rows1; i0+=BLOCK_SIZE) {
-        for(int k0 = 0; k0<cols1; k0+=BLOCK_SIZE) {
-            for(int j0 = 0; j0<cols2; j0+=BLOCK_SIZE) {
-                int i_max = min(i0 + BLOCK_SIZE, rows1);
-                int k_max = min(k0 + BLOCK_SIZE, cols1);
-                int j_max = min(j0 + BLOCK_SIZE, cols2);
+    for(int i0 = 0; i0<rows1; i0+=block_size) {
+        for(int k0 = 0; k0<cols1; k0+=block_size) {
+            for(int j0 = 0; j0<cols2; j0+=block_size) {
+                int i_max = min(i0 + block_size, rows1);
+                int k_max = min(k0 + block_size, cols1);
+                int j_max = min(j0 + block_size, cols2);
                 int j_len = j_max - j0;
 
                 for(int k = k0; k<k_max; k++) {
@@ -184,7 +181,7 @@ void matmul_improved(int rows1, int cols1, int cols2, const float *a, const floa
             }
         }
     }
-    free(B_pack);
+    _aligned_free(B_pack);
 }
 // CALLGRIND_STOP_INSTRUMENTATION;
 }

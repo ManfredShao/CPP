@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <openblas/cblas.h>
 #include <omp.h>
 

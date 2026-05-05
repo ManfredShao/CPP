@@ -1,6 +1,5 @@
 #include "sgemm.h"
 #include <math.h>
-#include <string.h>
 
 struct Matrix* generate_matrix(size_t rows, size_t cols) {
     struct Matrix *mat = (struct Matrix*)malloc(sizeof(struct Matrix));

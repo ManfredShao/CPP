@@ -5,9 +5,7 @@
 #endif
 
 // #include <valgrind/callgrind.h>
-#include <omp.h>
-#include <string.h>
-#include <stdlib.h>
+
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
 void matmul_plain(int rows1, int cols1, int cols2, const float *a, const float *b, float *c) {

@@ -35,7 +35,7 @@ struct Matrix* create_matrix(size_t rows, size_t cols) {
 
     mat->rows = rows;
     mat->cols = cols;
-    mat->ld = cols; // leading dimension for BLAS is typically the number of columns
+    mat->ld = cols; 
     mat->data = (float*)malloc(rows * cols * sizeof(float));
     if(mat->data == NULL) {
         fprintf(stderr, "Memory allocation failed for matrix data\n");

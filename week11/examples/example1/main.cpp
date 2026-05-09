@@ -6,7 +6,7 @@ using namespace std;
 // Why memory leak and memory double free?
 int main()
 {
-    {
+    // {
         MyString str1(10, "Shenzhen");
         cout << "str1: " << str1 << endl;
 
@@ -17,7 +17,7 @@ int main()
         cout << "str3: " << str3 << endl;
         str3 = str1;
         cout << "str3: " << str3 << endl;
-    }
+    // }
     cout << "end of main()" << endl; // it will not be printed out
     return 0;
 }

@@ -31,11 +31,21 @@ class Matrix
         for (size_t r = 0; r < m.rows; r++)
         {
             for(size_t c = 0; c < m.cols; c++)
-                os << m.data[r * m.rows + c] << ", ";
+                os << m.data[r * m.cols + c] << ", ";
             os << std::endl;
         }
         os << "]";
         return os;
+    }
+    void setElement(size_t r, size_t c, float value)
+    {
+        if(r < rows && c < cols) data[r * cols + c] = value;
+    }
+
+    float getElement(size_t r, size_t c) const
+    {
+        if(r < rows && c < cols) return data[r * cols + c];
+        return 0.0f;
     }
 };
 
@@ -47,6 +57,7 @@ int main()
     m2 = m1;
     m1.setElement(1,2, 4.5f);
     std::cout << m2.getElement(1,2) << std::endl;
+    std::cout << m2.getElement(0,6) << std::endl;
 
     std::cout << m1 << std::endl;
     std::cout << m2 << std::endl;

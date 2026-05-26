@@ -62,6 +62,7 @@ int main()
     cout << vec2.getElement(2, 0) << endl;
 
     // vec2 = mat; //error
+    vec2 = vec; // ok, the default assignment operator will copy each element of a static array member
 
     return 0;
 }
